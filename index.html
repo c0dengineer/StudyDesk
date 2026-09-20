@@ -1,19 +1,262 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dynamic To-Do List</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Study Desk</title>
+  <meta name="description" content="A daily to-do list, focus timer and progress tracker for students.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <h1>To-Do List</h1>
-    <input type="text" id="taskInput" placeholder="Enter a new task" />
-    <button id="addBtn">Add Task</button>
-    <ul id="taskList"></ul>
+  <div class="scrim" id="scrim"></div>
+
+  <div class="app">
+    <!-- ============ Sidebar ============ -->
+    <aside class="sidebar" id="sidebar" aria-label="Navigation">
+      <div class="brand"><span>Study Desk</span></div>
+
+      <nav class="nav" id="viewNav" aria-label="Views">
+        <button class="nav-item" data-view="today"><i data-icon="bolt"></i>Today<span class="count" data-count="today"></span></button>
+        <button class="nav-item" data-view="upcoming"><i data-icon="cal"></i>Upcoming<span class="count" data-count="upcoming"></span></button>
+        <button class="nav-item" data-view="all"><i data-icon="list"></i>All tasks<span class="count" data-count="all"></span></button>
+        <button class="nav-item" data-view="done"><i data-icon="check"></i>Completed<span class="count" data-count="done"></span></button>
+      </nav>
+
+      <section aria-labelledby="subjectsHead">
+        <div class="side-head">
+          <span id="subjectsHead">Subjects</span>
+          <button class="side-add" id="addSubject" aria-label="Add subject"><i data-icon="plus"></i></button>
+        </div>
+        <ul class="subject-list" id="subjectList"></ul>
+      </section>
+
+      <div class="side-foot">
+        <button class="foot-btn" id="themeBtn"><i data-icon="moon"></i><span>Dark mode</span></button>
+        <button class="foot-btn" id="exportBtn"><i data-icon="download"></i><span>Export backup</span></button>
+        <button class="foot-btn" id="importBtn"><i data-icon="upload"></i><span>Import backup</span></button>
+        <button class="foot-btn" id="clearDoneBtn"><i data-icon="trash"></i><span>Clear completed</span></button>
+        <button class="foot-btn" id="helpBtn"><i data-icon="keyboard"></i><span>Keyboard shortcuts</span></button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+      </div>
+    </aside>
+
+    <!-- ============ Main ============ -->
+    <main class="main">
+      <div class="main-inner">
+        <header class="topbar">
+          <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open menu"><i data-icon="menu"></i></button>
+          <div class="title-wrap">
+            <h1 id="viewTitle">Today</h1>
+            <div class="subline" id="subline"></div>
+          </div>
+          <div class="controls">
+            <label class="search">
+              <i data-icon="search"></i>
+              <input class="input" id="search" type="search" placeholder="Search tasks" aria-label="Search tasks" autocomplete="off">
+            </label>
+            <label class="sort">
+              <span class="sr">Sort by</span>
+              <select class="input" id="sortSel" aria-label="Sort tasks">
+                <option value="smart">Smart order</option>
+                <option value="due">Due date</option>
+                <option value="priority">Priority</option>
+                <option value="newest">Newest first</option>
+                <option value="manual">Manual (drag)</option>
+              </select>
+            </label>
+          </div>
+        </header>
+
+        <form class="quick" id="quickForm" autocomplete="off">
+          <label class="sr" for="quickInput">New task</label>
+          <input id="quickInput" type="text" maxlength="160"
+                 placeholder="Add a task, e.g. Read ch. 4 #history fri 5pm !high">
+          <div class="quick-actions">
+            <button type="button" class="icon-btn" id="detailsBtn" aria-label="Add with details" title="Add with details"><i data-icon="sliders"></i></button>
+            <button type="submit" class="btn primary">Add task</button>
+          </div>
+        </form>
+        <div class="preview" id="preview" aria-live="polite"></div>
+
+        <ul class="task-list" id="taskList"></ul>
+      </div>
+    </main>
+
+    <!-- ============ Right panel ============ -->
+    <aside class="panel" aria-label="Focus and progress">
+      <section class="card" aria-labelledby="focusHead">
+        <h2 id="focusHead">Focus timer</h2>
+        <div class="seg" role="group" aria-label="Timer mode">
+          <button class="seg-btn" id="modeFocus" aria-pressed="true">Focus</button>
+          <button class="seg-btn" id="modeBreak" aria-pressed="false">Break</button>
+        </div>
+        <div class="ring" id="ring">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <circle class="ring-track" cx="100" cy="100" r="88"/>
+            <circle class="ring-bar" id="ringBar" cx="100" cy="100" r="88"/>
+          </svg>
+          <div class="ring-text">
+            <span class="time" id="timeText" role="timer" aria-live="off">25:00</span>
+            <span class="mode" id="modeText">Focus</span>
+          </div>
+        </div>
+        <div class="timer-controls">
+          <button class="btn primary grow" id="startBtn">Start</button>
+          <button class="icon-btn outlined" id="resetBtn" aria-label="Reset timer" title="Reset"><i data-icon="reset"></i></button>
+        </div>
+        <label class="field slim">
+          <span>Working on</span>
+          <select class="input" id="focusTask"></select>
+        </label>
+        <div class="row2">
+          <label class="field slim">
+            <span>Focus</span>
+            <select class="input" id="focusLen">
+              <option value="15">15 min</option><option value="25">25 min</option>
+              <option value="45">45 min</option><option value="50">50 min</option>
+              <option value="60">60 min</option>
+            </select>
+          </label>
+          <label class="field slim">
+            <span>Break</span>
+            <select class="input" id="breakLen">
+              <option value="5">5 min</option><option value="10">10 min</option>
+              <option value="15">15 min</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="todayHead">
+        <h2 id="todayHead">Your day</h2>
+        <div class="day-line"><strong id="dayBig">0 done</strong><span id="daySmall"></span></div>
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="dayBar"><i></i></div>
+        <dl class="stats">
+          <div><dt>Streak</dt><dd id="statStreak">0 days</dd></div>
+          <div><dt>Focused today</dt><dd id="statFocus">0 min</dd></div>
+        </dl>
+      </section>
+
+      <section class="card" aria-labelledby="weekHead">
+        <h2 id="weekHead">This week</h2>
+        <div class="week" id="week"></div>
+        <p class="week-total" id="weekTotal"></p>
+      </section>
+    </aside>
   </div>
+
+  <!-- ============ Task dialog ============ -->
+  <dialog class="dialog" id="taskDialog" aria-labelledby="taskDialogTitle">
+    <form id="taskForm" novalidate>
+      <header class="dlg-head">
+        <h2 id="taskDialogTitle">Edit task</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Close"><i data-icon="x"></i></button>
+      </header>
+
+      <label class="field"><span>Task</span>
+        <input class="input" id="fTitle" type="text" maxlength="160" required>
+      </label>
+
+      <div class="row2">
+        <label class="field"><span>Subject</span><select class="input" id="fSubject"></select></label>
+        <label class="field"><span>Repeat</span>
+          <select class="input" id="fRepeat">
+            <option value="none">Doesn't repeat</option>
+            <option value="daily">Every day</option>
+            <option value="weekdays">Every weekday</option>
+            <option value="weekly">Every week</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="row2">
+        <label class="field"><span>Due date</span><input class="input" id="fDue" type="date"></label>
+        <label class="field"><span>Time</span><input class="input" id="fTime" type="time"></label>
+      </div>
+
+      <fieldset class="field">
+        <legend>Priority</legend>
+        <div class="seg" id="fPriority">
+          <label class="seg-opt"><input type="radio" name="prio" value="none" checked><span>None</span></label>
+          <label class="seg-opt"><input type="radio" name="prio" value="low"><span>Low</span></label>
+          <label class="seg-opt"><input type="radio" name="prio" value="med"><span>Medium</span></label>
+          <label class="seg-opt"><input type="radio" name="prio" value="high"><span>High</span></label>
+        </div>
+      </fieldset>
+
+      <label class="field"><span>Notes</span>
+        <textarea class="input" id="fNotes" rows="3" placeholder="Page numbers, links, what the teacher said…"></textarea>
+      </label>
+
+      <div class="field">
+        <span>Steps</span>
+        <ul class="draft-subs" id="fSubs"></ul>
+        <input class="input" id="fSubNew" type="text" placeholder="Add a step and press Enter" aria-label="Add a step">
+      </div>
+
+      <footer class="dlg-foot">
+        <button type="button" class="btn ghost danger" id="fDelete">Delete task</button>
+        <span class="grow"></span>
+        <button type="button" class="btn ghost" data-close>Cancel</button>
+        <button type="submit" class="btn primary" id="fSave">Save task</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- ============ Subject dialog ============ -->
+  <dialog class="dialog small" id="subjectDialog" aria-labelledby="subjectDialogTitle">
+    <form id="subjectForm" novalidate>
+      <header class="dlg-head">
+        <h2 id="subjectDialogTitle">New subject</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Close"><i data-icon="x"></i></button>
+      </header>
+      <label class="field"><span>Name</span>
+        <input class="input" id="sName" type="text" maxlength="24" required placeholder="e.g. Biology">
+      </label>
+      <fieldset class="field">
+        <legend>Colour</legend>
+        <div class="swatches" id="swatches"></div>
+      </fieldset>
+      <footer class="dlg-foot">
+        <button type="button" class="btn ghost danger" id="sDelete">Delete</button>
+        <span class="grow"></span>
+        <button type="button" class="btn ghost" data-close>Cancel</button>
+        <button type="submit" class="btn primary">Save subject</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- ============ Shortcuts dialog ============ -->
+  <dialog class="dialog small" id="helpDialog" aria-labelledby="helpTitle">
+    <header class="dlg-head">
+      <h2 id="helpTitle">Shortcuts and quick add</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Close"><i data-icon="x"></i></button>
+    </header>
+    <h3 class="help-h">Keyboard</h3>
+    <dl class="keys">
+      <div><dt><kbd>N</kbd></dt><dd>New task</dd></div>
+      <div><dt><kbd>/</kbd></dt><dd>Search</dd></div>
+      <div><dt><kbd>1</kbd>–<kbd>4</kbd></dt><dd>Today, Upcoming, All, Completed</dd></div>
+      <div><dt><kbd>F</kbd></dt><dd>Start or pause the focus timer</dd></div>
+      <div><dt><kbd>T</kbd></dt><dd>Switch light and dark mode</dd></div>
+      <div><dt><kbd>Esc</kbd></dt><dd>Leave the current field</dd></div>
+    </dl>
+    <h3 class="help-h">Quick add words</h3>
+    <dl class="keys">
+      <div><dt><code>#bio</code></dt><dd>Subject (name or start of it)</dd></div>
+      <div><dt><code>!high</code></dt><dd><code>!med</code> and <code>!low</code> also work</dd></div>
+      <div><dt><code>today</code></dt><dd>Also tomorrow, fri, next week, in 3 days, sep 30, 2026-10-02</dd></div>
+      <div><dt><code>5pm</code></dt><dd>Also 17:30 or at 5:30pm</dd></div>
+      <div><dt><code>daily</code></dt><dd>Also weekdays, weekly, every week</dd></div>
+    </dl>
+  </dialog>
+
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+  <noscript><p style="padding:24px">Study Desk needs JavaScript to run.</p></noscript>
   <script src="script.js"></script>
 </body>
 </html>
